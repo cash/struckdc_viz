@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import re
 
 
@@ -5,7 +6,10 @@ def normalize_tweets(tweets):
     """Clean up tweet text before running through POS tagger"""
 
     # fix typos
+    tweets = [x.replace(u'—', ' ') for x in tweets]
+    tweets = [x.replace('-', ' ') for x in tweets]
     tweets = [x.replace('  ', ' ') for x in tweets]
+    tweets = [x.replace('&amp;', '&') for x in tweets]
     tweets = [x.replace('14thSt', '14th St') for x in tweets]
     tweets = [x.replace('blkTaylor', 'blk Taylor') for x in tweets]
     tweets = [x.replace('k St', 'K St') for x in tweets]
@@ -13,21 +17,49 @@ def normalize_tweets(tweets):
     tweets = [x.replace('S Cap SE', 'South Capitol Street SE') for x in tweets]
     tweets = [x.replace('RESERVOIR RD', 'Reservoir Road') for x in tweets]
     tweets = [x.replace('Rhode island', 'Rhode Island') for x in tweets]
-    tweets = [x.replace('SE-', 'SE -') for x in tweets]
+    tweets = [x.replace('3500blK', '3500 blk') for x in tweets]
+    tweets = [x.replace('13TH', '13th') for x in tweets]
+    tweets = [x.replace('14 &', '14th Street &') for x in tweets]
+    tweets = [x.replace('15 &', '15th &') for x in tweets]
+    tweets = [x.replace('15h', '15th') for x in tweets]
+    tweets = [x.replace('17TH', '17th') for x in tweets]
+    tweets = [x.replace('17 th', '17th') for x in tweets]
+    tweets = [x.replace('17 &', '17th &') for x in tweets]
+    tweets = [x.replace('17th & independence', '17th Street & Independence') for x in tweets]
+    tweets = [x.replace('Nannie helen Burroughs', 'Nannie Helen Burroughs') for x in tweets]
+    tweets = [x.replace('struck-33rd', 'struck - 33rd') for x in tweets]
+    tweets = [x.replace('Penn v', 'Penn Avenue') for x in tweets]
+    tweets = [x.replace('2600 Bowen SE', '2600 Bowen Road SE') for x in tweets]
+    tweets = [x.replace('6th&MStNW', '6th & M St NW') for x in tweets]
+    tweets = [x.replace('//1300', '1300') for x in tweets]
+    tweets = [x.replace('b&', '&') for x in tweets]
+    tweets = [x.replace('Conn Av.&', 'Conn Avenue &') for x in tweets]
+    tweets = [x.replace('otis St', 'Otis Street') for x in tweets]
+    tweets = [x.replace('independence', 'Independence') for x in tweets]
+    tweets = [x.replace('irving', 'Irving') for x in tweets]
+    tweets = [x.replace('Mt pleasant', 'Mt Pleasant') for x in tweets]
+    tweets = [x.replace('ERastern', 'Eastern') for x in tweets]
+    tweets = [x.replace('CONSTITUTION', 'Constitution') for x in tweets]
+    tweets = [x.replace('WOODLEY', 'Woodley') for x in tweets]
+    tweets = [x.replace('GALLATIN', 'Gallatin') for x in tweets]
+    tweets = [x.replace('NEW HAMPSHIRE', 'New Hampshire') for x in tweets]
+    tweets = [x.replace('TAYLOR', 'Taylor') for x in tweets]
     tweets = [x.replace('NW/', 'NW - ') for x in tweets]
     tweets = [x.replace('NE:', 'NE :') for x in tweets]
     tweets = [x.replace('Ne:', 'Ne :') for x in tweets]
     tweets = [x.replace('NW:', 'NW :') for x in tweets]
     tweets = [x.replace('Nw:', 'NW :') for x in tweets]
+    tweets = [x.replace('Nw:', 'NW :') for x in tweets]
     tweets = [x.replace('SE:', 'SE :') for x in tweets]
     tweets = [x.replace('SW:', 'SW :') for x in tweets]
+    tweets = [x.replace('SW/', 'SW - ') for x in tweets]
     tweets = [x.replace('b/o', 'block of') for x in tweets]
-    # tweets = [x.replace() for x in tweets]
-    # tweets = [x.replace() for x in tweets]
-    # tweets = [x.replace() for x in tweets]
-    # tweets = [x.replace() for x in tweets]
-    # tweets = [x.replace() for x in tweets]
     tweets = [x.replace('NWhttp://wp.me/pXPcJ-3Q', 'NW http://wp.me/pXPcJ-3Q') for x in tweets]
+    tweets = [re.sub(r' @ ', ' & ', x) for x in tweets]
+    tweets = [re.sub(r'(?<=\d{2})TH', 'th', x) for x in tweets]
+    tweets = [x.replace('unit block', '100 block') for x in tweets]
+    tweets = [x.replace('unit blk', '100 block') for x in tweets]
+    tweets = [re.sub(r'(?<!:)//', ' ', x) for x in tweets]
 
     # remove urls
     tweets = [remove_urls(x) for x in tweets]
@@ -44,9 +76,6 @@ def normalize_tweets(tweets):
     tweets = [x.replace('.', '') for x in tweets]
 
     tweets = normalize_abbrs(tweets)
-
-    # fix encoding
-    tweets = [x.replace('&amp;', '&') for x in tweets]
 
     # normalize case for pedestrian, cyclist, struck, bicyclist
     tweets = [re.sub(r'(?i)\bped\b', 'pedestrian', x) for x in tweets]
