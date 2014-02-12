@@ -2,93 +2,37 @@
 import re
 
 
-def normalize_tweets(tweets):
-    """Clean up tweet text before running through POS tagger"""
+def normalize_text(text):
+    """Clean up tweet text to simplify parsing"""
 
-    # fix typos
-    tweets = [x.replace(u'—', ' ') for x in tweets]
-    tweets = [x.replace('-', ' ') for x in tweets]
-    tweets = [x.replace('  ', ' ') for x in tweets]
-    tweets = [x.replace('&amp;', '&') for x in tweets]
-    tweets = [x.replace('14thSt', '14th St') for x in tweets]
-    tweets = [x.replace('blkTaylor', 'blk Taylor') for x in tweets]
-    tweets = [x.replace('k St', 'K St') for x in tweets]
-    tweets = [x.replace(' street ', ' Street ') for x in tweets]
-    tweets = [x.replace('S Cap SE', 'South Capitol Street SE') for x in tweets]
-    tweets = [x.replace('RESERVOIR RD', 'Reservoir Road') for x in tweets]
-    tweets = [x.replace('Rhode island', 'Rhode Island') for x in tweets]
-    tweets = [x.replace('3500blK', '3500 blk') for x in tweets]
-    tweets = [x.replace('13TH', '13th') for x in tweets]
-    tweets = [x.replace('14 &', '14th Street &') for x in tweets]
-    tweets = [x.replace('15 &', '15th &') for x in tweets]
-    tweets = [x.replace('15h', '15th') for x in tweets]
-    tweets = [x.replace('17TH', '17th') for x in tweets]
-    tweets = [x.replace('17 th', '17th') for x in tweets]
-    tweets = [x.replace('17 &', '17th &') for x in tweets]
-    tweets = [x.replace('17th & independence', '17th Street & Independence') for x in tweets]
-    tweets = [x.replace('Nannie helen Burroughs', 'Nannie Helen Burroughs') for x in tweets]
-    tweets = [x.replace('struck-33rd', 'struck - 33rd') for x in tweets]
-    tweets = [x.replace('Penn v', 'Penn Avenue') for x in tweets]
-    tweets = [x.replace('2600 Bowen SE', '2600 Bowen Road SE') for x in tweets]
-    tweets = [x.replace('6th&MStNW', '6th & M St NW') for x in tweets]
-    tweets = [x.replace('//1300', '1300') for x in tweets]
-    tweets = [x.replace('b&', '&') for x in tweets]
-    tweets = [x.replace('Conn Av.&', 'Conn Avenue &') for x in tweets]
-    tweets = [x.replace('otis St', 'Otis Street') for x in tweets]
-    tweets = [x.replace('independence', 'Independence') for x in tweets]
-    tweets = [x.replace('irving', 'Irving') for x in tweets]
-    tweets = [x.replace('Mt pleasant', 'Mt Pleasant') for x in tweets]
-    tweets = [x.replace('ERastern', 'Eastern') for x in tweets]
-    tweets = [x.replace('CONSTITUTION', 'Constitution') for x in tweets]
-    tweets = [x.replace('WOODLEY', 'Woodley') for x in tweets]
-    tweets = [x.replace('GALLATIN', 'Gallatin') for x in tweets]
-    tweets = [x.replace('NEW HAMPSHIRE', 'New Hampshire') for x in tweets]
-    tweets = [x.replace('TAYLOR', 'Taylor') for x in tweets]
-    tweets = [x.replace('NW/', 'NW - ') for x in tweets]
-    tweets = [x.replace('NE:', 'NE :') for x in tweets]
-    tweets = [x.replace('Ne:', 'Ne :') for x in tweets]
-    tweets = [x.replace('NW:', 'NW :') for x in tweets]
-    tweets = [x.replace('Nw:', 'NW :') for x in tweets]
-    tweets = [x.replace('Nw:', 'NW :') for x in tweets]
-    tweets = [x.replace('SE:', 'SE :') for x in tweets]
-    tweets = [x.replace('SW:', 'SW :') for x in tweets]
-    tweets = [x.replace('SW/', 'SW - ') for x in tweets]
-    tweets = [x.replace('b/o', 'block of') for x in tweets]
-    tweets = [x.replace('NWhttp://wp.me/pXPcJ-3Q', 'NW http://wp.me/pXPcJ-3Q') for x in tweets]
-    tweets = [re.sub(r' @ ', ' & ', x) for x in tweets]
-    tweets = [re.sub(r'(?<=\d{2})TH', 'th', x) for x in tweets]
-    tweets = [x.replace('unit block', '100 block') for x in tweets]
-    tweets = [x.replace('unit blk', '100 block') for x in tweets]
-    tweets = [re.sub(r'(?<!:)//', ' ', x) for x in tweets]
+    text = fix_typos(text)
+    text = remove_urls(text)
 
-    # remove urls
-    tweets = [remove_urls(x) for x in tweets]
+    # remove . and , to not confuse address parsing
+    text = text.replace(',', '')
+    text = text.replace('.', '')
 
     # put a space between street number and blk
     blk_pat = re.compile('(?<=\d)blk')
-    for index, tweet in enumerate(tweets):
-        matches = blk_pat.findall(tweet)
-        if matches:
-            tweets[index] = tweet.replace('blk', ' blk')
+    matches = blk_pat.findall(text)
+    if matches:
+        text = text.replace('blk', ' blk')
 
-    # remove . and , to not confuse address parsing
-    tweets = [x.replace(',', '') for x in tweets]
-    tweets = [x.replace('.', '') for x in tweets]
-
-    tweets = normalize_abbrs(tweets)
+    text = normalize_abbrs(text)
 
     # normalize case for pedestrian, cyclist, struck, bicyclist
-    tweets = [re.sub(r'(?i)\bped\b', 'pedestrian', x) for x in tweets]
-    tweets = [x.replace('Pedestrian', 'pedestrian') for x in tweets]
-    tweets = [x.replace('Cyclist', 'cyclist') for x in tweets]
-    tweets = [x.replace('Bicyclist', 'cyclist') for x in tweets]
-    tweets = [x.replace('Struck', 'struck') for x in tweets]
-    tweets = [x.replace('Block', 'block') for x in tweets]
+    text = re.sub(r'(?i)\bped\b', 'pedestrian', text)
+    text = text.replace('Pedestrian', 'pedestrian')
+    text = text.replace('Cyclist', 'cyclist')
+    text = text.replace('Bicyclist', 'cyclist')
+    text = text.replace('Bicycle', 'bicycle')
+    text = text.replace('Struck', 'struck')
+    text = text.replace('Block', 'block')
 
-    # standardize block of vs block (choosing to drop of for easier token processing)
-    tweets = [x.replace('block of', 'block') for x in tweets]
+    # standardize 'block of' vs 'block' (choosing to drop 'of' for easier token processing)
+    text = text.replace('block of', 'block')
 
-    return tweets
+    return text
 
 
 def remove_urls(text):
@@ -104,28 +48,102 @@ def remove_urls(text):
     return text
 
 
-def normalize_abbrs(tweets):
-    """Expand abbreviations related to locations in tweets"""
+def normalize_abbrs(text):
+    """Expand abbreviations related to locations in tweet text"""
 
-    tweets = [re.sub(r'(?i)\bave\b', 'Avenue', x) for x in tweets]
-    tweets = [re.sub(r'(?i)\bav\b', 'Avenue', x) for x in tweets]
-    tweets = [re.sub(r'(?i)\bst\b', 'Street', x) for x in tweets]
-    tweets = [re.sub(r'(?i)\bsts\b', 'Streets', x) for x in tweets]
-    tweets = [re.sub(r'(?i)\brd\b', 'Road', x) for x in tweets]
-    tweets = [re.sub(r'(?i)\bdr\b', 'Drive', x) for x in tweets]
-    tweets = [re.sub(r'(?i)\bpl\b', 'Place', x) for x in tweets]
-    tweets = [re.sub(r'(?i)\bpkwy\b', 'Parkway', x) for x in tweets]
-    tweets = [re.sub(r'(?i)\bblvd\b', 'Boulevard', x) for x in tweets]
-    tweets = [re.sub(r'(?i)\bbl\b', 'Boulevard', x) for x in tweets]
-    tweets = [re.sub(r'(?i)\bblk\b', 'block', x) for x in tweets]
+    text = re.sub(r'(?i)\bave\b', 'Avenue', text)
+    text = re.sub(r'(?i)\bav\b', 'Avenue', text)
+    text = re.sub(r'(?i)\bst\b', 'Street', text)
+    text = re.sub(r'(?i)\bsts\b', 'Streets', text)
+    text = re.sub(r'(?i)\brd\b', 'Road', text)
+    text = re.sub(r'(?i)\bdr\b', 'Drive', text)
+    text = re.sub(r'(?i)\bpl\b', 'Place', text)
+    text = re.sub(r'(?i)\bcir\b', 'Circle', text)
+    text = re.sub(r'(?i)\bpkwy\b', 'Parkway', text)
+    text = re.sub(r'(?i)\bblvd\b', 'Boulevard', text)
+    text = re.sub(r'(?i)\bbl\b', 'Boulevard', text)
+    text = re.sub(r'(?i)\bblk\b', 'block', text)
 
-    tweets = [re.sub(r'(?i)\bSe\b', 'SE', x) for x in tweets]
-    tweets = [re.sub(r'(?i)\bSw\b', 'SW', x) for x in tweets]
-    tweets = [re.sub(r'(?i)\bNe\b', 'NE', x) for x in tweets]
-    tweets = [re.sub(r'(?i)\bNw\b', 'NW', x) for x in tweets]
+    text = re.sub(r'(?i)\bSe\b', 'SE', text)
+    text = re.sub(r'(?i)\bSw\b', 'SW', text)
+    text = re.sub(r'(?i)\bNe\b', 'NE', text)
+    text = re.sub(r'(?i)\bNw\b', 'NW', text)
 
-    tweets = [re.sub(r'\bCap\b', 'Capitol', x) for x in tweets]
-    tweets = [re.sub(r'\bSo\b', 'South', x) for x in tweets]
-    tweets = [x.replace('NYAv', 'NY Avenue') for x in tweets]
+    text = re.sub(r'\bCap\b', 'Capitol', text)
+    text = re.sub(r'\bSo\b', 'South', text)
+    text = text.replace('NYAv', 'NY Avenue')
+    text = re.sub(r'\bMass\b', 'Massachusetts', text)
+    text = re.sub(r'\bNY\b', 'New York', text)
+    text = re.sub(r'\bNJ\b', 'New Jersey', text)
+    text = re.sub(r'\bPA\b', 'Pennsylvania', text)
+    text = re.sub(r'(?i)\bGA\b', 'Georgia', text)
+    text = re.sub(r'(?i)\bRI\b', 'Rhode Island', text)
+    text = re.sub(r'\bInd\b', 'Indiana', text)
+    text = re.sub(r'\bFla\b', 'Florida', text)
+    text = re.sub(r'\bConn\b', 'Connecticut', text)
+    text = re.sub(r'\bNeb\b', 'Nebraska', text)
+    text = re.sub(r'\bMinn\b', 'Minnesota', text)
 
-    return tweets
+    return text
+
+def fix_typos(text):
+    """hacky quick typo fixes"""
+
+    text = text.replace(u'—', ' ')
+    text = text.replace('-', ' ')
+    text = text.replace('  ', ' ')
+    text = text.replace('&amp;', '&')
+    text = text.replace('14thSt', '14th St')
+    text = text.replace('blkTaylor', 'blk Taylor')
+    text = text.replace('k St', 'K St')
+    text = text.replace(' street ', ' Street ')
+    text = text.replace('S Cap SE', 'South Capitol Street SE')
+    text = text.replace('RESERVOIR RD', 'Reservoir Road')
+    text = text.replace('Rhode island', 'Rhode Island')
+    text = text.replace('3500blK', '3500 blk')
+    text = text.replace('13TH', '13th')
+    text = text.replace('14 &', '14th Street &')
+    text = text.replace('15 &', '15th &')
+    text = text.replace('15h', '15th')
+    text = text.replace('17TH', '17th')
+    text = text.replace('17 th', '17th')
+    text = text.replace('17 &', '17th &')
+    text = text.replace('17th & independence', '17th Street & Independence')
+    text = text.replace('Nannie helen Burroughs', 'Nannie Helen Burroughs')
+    text = text.replace('struck-33rd', 'struck - 33rd')
+    text = text.replace('Penn v', 'Penn Avenue')
+    text = text.replace('2600 Bowen SE', '2600 Bowen Road SE')
+    text = text.replace('6th&MStNW', '6th & M St NW')
+    text = text.replace('//1300', '1300')
+    text = text.replace('b&', '&')
+    text = text.replace('Conn Av.&', 'Conn Avenue &')
+    text = text.replace('otis St', 'Otis Street')
+    text = text.replace('independence', 'Independence')
+    text = text.replace('irving', 'Irving')
+    text = text.replace('Mt pleasant', 'Mt Pleasant')
+    text = text.replace('ERastern', 'Eastern')
+    text = text.replace('CONSTITUTION', 'Constitution')
+    text = text.replace('WOODLEY', 'Woodley')
+    text = text.replace('GALLATIN', 'Gallatin')
+    text = text.replace('NEW HAMPSHIRE', 'New Hampshire')
+    text = text.replace('TAYLOR', 'Taylor')
+    text = text.replace('Joeclyn', 'Jocelyn')
+    text = text.replace('NW/', 'NW - ')
+    text = text.replace('NE:', 'NE :')
+    text = text.replace('Ne:', 'Ne :')
+    text = text.replace('NW:', 'NW :')
+    text = text.replace('Nw:', 'NW :')
+    text = text.replace('Nw:', 'NW :')
+    text = text.replace('SE:', 'SE :')
+    text = text.replace('SW:', 'SW :')
+    text = text.replace('SW/', 'SW - ')
+    text = text.replace('b/o', 'block of')
+    text = text.replace('NWhttp://wp.me/pXPcJ-3Q', 'NW http://wp.me/pXPcJ-3Q')
+    text = text.replace('unit block', '100 block')
+    text = text.replace('unit blk', '100 block')
+    text = re.sub(r' @ ', ' & ', text)
+    text = re.sub(r'\bAt\b', 'at', text)
+    text = re.sub(r'(?<=\d{2})TH', 'th', text)
+    text = re.sub(r'(?<!:)//', ' ', text)
+
+    return text

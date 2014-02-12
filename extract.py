@@ -15,9 +15,9 @@ class AddressExtractor(object):
     """Extract addresses from tweets
 
        This supports two different types of address (block address and intersections).
-       It tokenizes the tweet and then implements hard coded FSMs for the two address
-       types. Another option would be to convert the list of tokens to a string and
-       performed regex matching on the strings.
+       It runs a custom address tagger the tweet and then implements hard coded FSMs
+       for the two address types. Another option would be to convert the list of
+       tokens to a string and performs regex matching on the strings.
     """
 
     def extract(self, tweet):

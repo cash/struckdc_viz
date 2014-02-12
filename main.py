@@ -1,51 +1,59 @@
 import json
 import time
-from normalize import normalize_tweets
+import re
+from normalize import normalize_text
 from classify import TweetClassifier
 from extract import AddressExtractor
 import geopy
 
-with open('struckdc.json') as f:
+with open('tweets.json') as f:
     data = json.load(f)
 
-tweets = [tweet['text'] for tweet in data]
+tweets = [{key: tweet[key] for key in ['text', 'created_at']} for tweet in data]
 
 print("Starting with " + str(len(tweets)) + " tweets")
 
 classifier = TweetClassifier()
-tweets = [x for x in tweets if classifier.classify(x)]
+tweets = [x for x in tweets if classifier.classify(x['text'])]
 print("After removing tweets not starting with #ddd: " + str(len(tweets)))
 
-tweets = normalize_tweets(tweets)
-
 extractor = AddressExtractor()
-addresses = []
-for index, tweet in enumerate(tweets):
-    address = extractor.extract(tweet)
-    if address:
-        addresses.append(address)
-print("Number of addresses: " + str(len(addresses)))
+for tweet in tweets:
+    tweet['text'] = normalize_text(tweet['text'])
+    # cheap classifier for pedestrian versus cyclist
+    tweet['cyclist'] = bool(re.search(r'(?i)cycl', tweet['text']))
+    tweet['address'] = extractor.extract(tweet['text'])
 
 geolocator = geopy.geocoders.GoogleV3()
-coords = []
-for x in addresses:
+for tweet in tweets:
+    # throttling
     time.sleep(0.3)
+
+    if tweet['address'] is None:
+        continue
+
     try:
-        address, (latitude, longitude) = geolocator.geocode(x + " Washington DC")
+        address, (latitude, longitude) = geolocator.geocode(tweet['address'] + " Washington DC")
     except Exception as e:
-        # probably a temporary wireless network fluke
+        # probably a temporary wireless network fluke - skipping tweet
         print("unknown error: going to sleep for 5 seconds")
         print(e.message)
+        tweet['address'] = None
         time.sleep(5)
 
-    if address == 'Washington, DC, USA':
-        # could not geocode the address
-        continue
-    coords.append((latitude, longitude))
+    # getting just DC back means geocoding failed
+    if address != 'Washington, DC, USA':
+        tweet['address'] = address
+        tweet['latitude'] = latitude
+        tweet['longitude'] = longitude
+    else:
+        print("Error: could not geocode " + tweet['address'])
+        tweet['address'] = None
 
-print("Number of coordinates: " + str(len(coords)))
 
-with open('data.json', 'w') as outfile:
-    outfile.write('data = ')
-    json.dump(coords, outfile)
-    outfile.write(';')
+# remove tweets that we did not get addresses and lat/lon for
+tweets = [tweet for tweet in tweets if tweet['address'] is not None]
+print("Number of addresses: " + str(len(tweets)))
+
+with open('struckdc.json', 'w') as outfile:
+    json.dump(tweets, outfile)
