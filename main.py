@@ -40,6 +40,7 @@ for tweet in tweets:
         print(e.message)
         tweet['address'] = None
         time.sleep(5)
+        continue
 
     # getting just DC back means geocoding failed
     if address != 'Washington, DC, USA':
